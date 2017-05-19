@@ -1,0 +1,8 @@
+prefix=/home/ubuntu/catkin_ws/devel
+
+Name: projetoRedes
+Description: Description of projetoRedes
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/ubuntu/catkin_ws/devel/lib 
+Requires: 
