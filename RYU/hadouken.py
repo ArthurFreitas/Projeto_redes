@@ -1,25 +1,61 @@
+# Copyright (C) 2013 Nippon Telegraph and Telephone Corporation.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import struct
+
 from ryu.base import app_manager
-from ryu.controller import ofp_event
 from ryu.controller.handler import MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_0
-from ryu.lib.mac import haddr_to_bin
-from ryu.lib.packet import packet
-from ryu.lib.packet import ethernet
-from ryu.lib.packet import ether_types
+from ryu.lib import dpid as dpid_lib
+from ryu.lib import stplib
+from ryu.lib.mac import haddr_to_str
 
-class L2Switch(app_manager.RyuApp):
+
+class SimpleSwitchStp(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION]
+    _CONTEXTS = {'stplib': stplib.Stp}
 
     def __init__(self, *args, **kwargs):
-        super(L2Switch, self).__init__(*args, **kwargs)
+        super(SimpleSwitchStp, self).__init__(*args, **kwargs)
         self.mac_to_port = {}
+        self.stp = kwargs['stplib']
+
+        # Sample of stplib config.
+        #  please refer to stplib.Stp.set_config() for details.
+        """
+        config = {dpid_lib.str_to_dpid('0000000000000001'):
+                     {'bridge': {'priority': 0x8000,
+                                 'max_age': 10},
+                      'ports': {1: {'priority': 0x80},
+                                2: {'priority': 0x90}}},
+                  dpid_lib.str_to_dpid('0000000000000002'):
+                     {'bridge': {'priority': 0x9000}}}
+        self.stp.set_config(config)
+        """
 
     def add_flow(self, datapath, in_port, dst, actions):
         ofproto = datapath.ofproto
 
+        wildcards = ofproto_v1_0.OFPFW_ALL
+        wildcards &= ~ofproto_v1_0.OFPFW_IN_PORT
+        wildcards &= ~ofproto_v1_0.OFPFW_DL_DST
+
         match = datapath.ofproto_parser.OFPMatch(
-            in_port=in_port, dl_dst=haddr_to_bin(dst))
+            wildcards, in_port, 0, dst,
+            0, 0, 0, 0, 0, 0, 0, 0, 0)
 
         mod = datapath.ofproto_parser.OFPFlowMod(
             datapath=datapath, match=match, cookie=0,
@@ -28,26 +64,32 @@ class L2Switch(app_manager.RyuApp):
             flags=ofproto.OFPFF_SEND_FLOW_REM, actions=actions)
         datapath.send_msg(mod)
 
-    @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
+    def delete_flow(self, datapath):
+        ofproto = datapath.ofproto
+
+        wildcards = ofproto_v1_0.OFPFW_ALL
+        match = datapath.ofproto_parser.OFPMatch(
+            wildcards, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+        mod = datapath.ofproto_parser.OFPFlowMod(
+            datapath=datapath, match=match, cookie=0,
+            command=ofproto.OFPFC_DELETE)
+        datapath.send_msg(mod)
+
+    @set_ev_cls(stplib.EventPacketIn, MAIN_DISPATCHER)
     def packet_in_handler(self, ev):
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
-        ofp_parser = datapath.ofproto_parser
-        
-        pkt = packet.Packet(msg.data)
-        eth = pkt.get_protocol(ethernet.ethernet)
 
-        dst = eth.dst #mac addr from dst
-        src = eth.src #mac addr from src
-        
-        if not check_if_registered(src): #drop packet if not from authorized host
-            return
-        
+        dst, src, _eth_type = struct.unpack_from('!6s6sH', buffer(msg.data), 0)
+
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
 
-        self.logger.info("packet in %s %s %s %s", dpid, src, dst, msg.in_port)
+        self.logger.debug("packet in %s %s %s %s",
+                          dpid, haddr_to_str(src), haddr_to_str(dst),
+                          msg.in_port)
 
         # learn a mac address to avoid FLOOD next time.
         self.mac_to_port[dpid][src] = msg.in_port
@@ -63,36 +105,29 @@ class L2Switch(app_manager.RyuApp):
         if out_port != ofproto.OFPP_FLOOD:
             self.add_flow(datapath, msg.in_port, dst, actions)
 
-        data = None
-        if msg.buffer_id == ofproto.OFP_NO_BUFFER:
-            data = msg.data
-
         out = datapath.ofproto_parser.OFPPacketOut(
             datapath=datapath, buffer_id=msg.buffer_id, in_port=msg.in_port,
-            actions=actions, data=data)
+            actions=actions)
         datapath.send_msg(out)
-    
-    @set_ev_cls(ofp_event.EventOFPPortStatus, MAIN_DISPATCHER)
-    def _port_status_handler(self, ev):
-        msg = ev.msg
-        reason = msg.reason
-        port_no = msg.desc.port_no
 
-        ofproto = msg.datapath.ofproto
-        if reason == ofproto.OFPPR_ADD:
-            self.logger.info("port added %s", port_no)
-        elif reason == ofproto.OFPPR_DELETE:
-            self.logger.info("port deleted %s", port_no)
-        elif reason == ofproto.OFPPR_MODIFY:
-            self.logger.info("port modified %s", port_no)
-        else:
-            self.logger.info("Illeagal port state %s %s", port_no, reason)
+    @set_ev_cls(stplib.EventTopologyChange, MAIN_DISPATCHER)
+    def _topology_change_handler(self, ev):
+        dp = ev.dp
+        dpid_str = dpid_lib.dpid_to_str(dp.id)
+        msg = 'Receive topology change event. Flush MAC table.'
+        self.logger.debug("[dpid=%s] %s", dpid_str, msg)
 
-def check_if_registered(mac):
-    checkfile = open("hosts.txt", "r")
-    checkfile_content = checkfile.read()
-    counter = checkfile_content.count(mac)
-    if counter > 0:
-        return True
-    else:
-        return False
+        if dp.id in self.mac_to_port:
+            del self.mac_to_port[dp.id]
+        self.delete_flow(dp)
+
+    @set_ev_cls(stplib.EventPortStateChange, MAIN_DISPATCHER)
+    def _port_state_change_handler(self, ev):
+        dpid_str = dpid_lib.dpid_to_str(ev.dp.id)
+        of_state = {stplib.PORT_STATE_DISABLE: 'DISABLE',
+                    stplib.PORT_STATE_BLOCK: 'BLOCK',
+                    stplib.PORT_STATE_LISTEN: 'LISTEN',
+                    stplib.PORT_STATE_LEARN: 'LEARN',
+                    stplib.PORT_STATE_FORWARD: 'FORWARD'}
+        self.logger.debug("[dpid=%s][port=%d] state=%s",
+        dpid_str, ev.port_no, of_state[ev.port_state])
