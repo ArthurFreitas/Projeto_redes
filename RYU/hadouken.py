@@ -1,18 +1,3 @@
-# Copyright (C) 2013 Nippon Telegraph and Telephone Corporation.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-# implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import struct
 
 from ryu.base import app_manager
@@ -22,6 +7,8 @@ from ryu.ofproto import ofproto_v1_0
 from ryu.lib import dpid as dpid_lib
 from ryu.lib import stplib
 from ryu.lib.mac import haddr_to_str
+from ryu.lib.packet import packet
+from ryu.lib.packet import ethernet
 
 
 class SimpleSwitchStp(app_manager.RyuApp):
@@ -32,19 +19,6 @@ class SimpleSwitchStp(app_manager.RyuApp):
         super(SimpleSwitchStp, self).__init__(*args, **kwargs)
         self.mac_to_port = {}
         self.stp = kwargs['stplib']
-
-        # Sample of stplib config.
-        #  please refer to stplib.Stp.set_config() for details.
-        """
-        config = {dpid_lib.str_to_dpid('0000000000000001'):
-                     {'bridge': {'priority': 0x8000,
-                                 'max_age': 10},
-                      'ports': {1: {'priority': 0x80},
-                                2: {'priority': 0x90}}},
-                  dpid_lib.str_to_dpid('0000000000000002'):
-                     {'bridge': {'priority': 0x9000}}}
-        self.stp.set_config(config)
-        """
 
     def add_flow(self, datapath, in_port, dst, actions):
         ofproto = datapath.ofproto
@@ -81,9 +55,21 @@ class SimpleSwitchStp(app_manager.RyuApp):
         msg = ev.msg
         datapath = msg.datapath
         ofproto = datapath.ofproto
+        
+        pkt = packet.Packet(msg.data)
+        eth = pkt.get_protocol(ethernet.ethernet)
+
+        packet_dst = eth.dst #mac addr from dst
+        packet_src = eth.src #mac addr from src
+        
+        if not check_if_registered(packet_src): #drop packet if not from authorized host
+            print("{} is NOT authorized for communication".format(packet_src))            
+            return
+        else:
+            print("{} is authorized for communication".format(packet_src))
 
         dst, src, _eth_type = struct.unpack_from('!6s6sH', buffer(msg.data), 0)
-
+    
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
 
@@ -131,3 +117,12 @@ class SimpleSwitchStp(app_manager.RyuApp):
                     stplib.PORT_STATE_FORWARD: 'FORWARD'}
         self.logger.debug("[dpid=%s][port=%d] state=%s",
         dpid_str, ev.port_no, of_state[ev.port_state])
+
+def check_if_registered(mac):
+    checkfile = open("hosts.txt", "r")
+    checkfile_content = checkfile.read()
+    counter = checkfile_content.count(mac)
+    if counter > 0:
+        return True
+    else:
+        return False
