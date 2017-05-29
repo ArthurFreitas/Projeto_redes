@@ -11,12 +11,12 @@ from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet
 
 
-class SimpleSwitchStp(app_manager.RyuApp):
+class RyuFurioso(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION]
     _CONTEXTS = {'stplib': stplib.Stp}
 
     def __init__(self, *args, **kwargs):
-        super(SimpleSwitchStp, self).__init__(*args, **kwargs)
+        super(RyuFurioso, self).__init__(*args, **kwargs)
         self.mac_to_port = {}
         self.stp = kwargs['stplib']
 
