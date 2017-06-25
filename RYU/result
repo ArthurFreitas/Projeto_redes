@@ -1,0 +1,19 @@
+Connecting to host 192.168.56.102, port 5201
+[ 19] local 192.168.56.103 port 50665 connected to 192.168.56.102 port 5201
+[ ID] Interval           Transfer     Bandwidth       Retr  Cwnd
+[ 19]   0.00-1.00   sec  9.17 MBytes  9.17 MBytes/sec    5    157 KBytes       
+[ 19]   1.00-2.00   sec  4.29 MBytes  4.29 MBytes/sec    0    164 KBytes       
+[ 19]   2.00-3.00   sec  3.40 MBytes  3.40 MBytes/sec    0    171 KBytes       
+[ 19]   3.00-4.00   sec  3.01 MBytes  3.01 MBytes/sec    0    181 KBytes       
+[ 19]   4.00-5.00   sec  3.48 MBytes  3.48 MBytes/sec    0    209 KBytes       
+[ 19]   5.00-6.00   sec  5.34 MBytes  5.35 MBytes/sec    0    253 KBytes       
+[ 19]   6.00-7.00   sec  4.05 MBytes  4.05 MBytes/sec    0    315 KBytes       
+[ 19]   7.00-8.00   sec  3.22 MBytes  3.22 MBytes/sec    0    402 KBytes       
+[ 19]   8.00-9.00   sec  4.20 MBytes  4.20 MBytes/sec    0    510 KBytes       
+[ 19]   9.00-10.00  sec  4.71 MBytes  4.70 MBytes/sec    0    650 KBytes       
+[ 19]  10.00-11.00  sec  4.63 MBytes  4.63 MBytes/sec    0    806 KBytes       
+[ 19]  10.00-11.00  sec  4.63 MBytes  4.63 MBytes/sec    0    806 KBytes       
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bandwidth       Retr
+[ 19]   0.00-11.00  sec  58.2 MBytes  5.29 MBytes/sec    5             sender
+[ 19]   0.00-11.00  sec  0.00 Bytes  0.00 MBytes/sec                  receiver

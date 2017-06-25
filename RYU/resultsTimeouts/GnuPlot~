@@ -1,0 +1,9 @@
+gnuplot -persist
+set style fill solid 0.25 border -1
+set style boxplot outliers pointtype 7
+set style data boxplot
+set yrange [*:*]
+set ylabel "Number of Timeouts"
+set title 'Packet loss' font 'Arial,14';
+set xtics ('0' 1)
+plot for [i=1:1] '0loss' using (i):i notitle
