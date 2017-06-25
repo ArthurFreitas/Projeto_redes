@@ -59,7 +59,8 @@ def myNetwork():
     net.get('s3').start([c0])
 
     info( '*** Post configure switches and hosts\n')
-
+    #h1.cmdPrint('bash nodeA.sh')
+    
     CLI(net)
     net.stop()
 

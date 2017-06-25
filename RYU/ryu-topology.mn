@@ -38,16 +38,6 @@
     ],
     "hosts": [
         {
-            "number": "2",
-            "opts": {
-                "hostname": "h2",
-                "nodeNum": 2,
-                "sched": "host"
-            },
-            "x": "136.0",
-            "y": "495.0"
-        },
-        {
             "number": "3",
             "opts": {
                 "hostname": "h3",
@@ -66,24 +56,19 @@
             },
             "x": "411.0",
             "y": "104.0"
+        },
+        {
+            "number": "2",
+            "opts": {
+                "hostname": "h2",
+                "nodeNum": 2,
+                "sched": "host"
+            },
+            "x": "136.0",
+            "y": "495.0"
         }
     ],
     "links": [
-        {
-            "dest": "s2",
-            "opts": {},
-            "src": "s1"
-        },
-        {
-            "dest": "s3",
-            "opts": {},
-            "src": "s2"
-        },
-        {
-            "dest": "s4",
-            "opts": {},
-            "src": "s2"
-        },
         {
             "dest": "s4",
             "opts": {},
@@ -117,16 +102,16 @@
     ],
     "switches": [
         {
-            "number": "3",
+            "number": "4",
             "opts": {
                 "controllers": [
                     "c0"
                 ],
-                "hostname": "s3",
-                "nodeNum": 3,
+                "hostname": "s4",
+                "nodeNum": 4,
                 "switchType": "default"
             },
-            "x": "243.0",
+            "x": "573.0",
             "y": "493.0"
         },
         {
@@ -143,29 +128,16 @@
             "y": "202.0"
         },
         {
-            "number": "2",
+            "number": "3",
             "opts": {
                 "controllers": [
                     "c0"
                 ],
-                "hostname": "s2",
-                "nodeNum": 2,
+                "hostname": "s3",
+                "nodeNum": 3,
                 "switchType": "default"
             },
-            "x": "412.0",
-            "y": "364.0"
-        },
-        {
-            "number": "4",
-            "opts": {
-                "controllers": [
-                    "c0"
-                ],
-                "hostname": "s4",
-                "nodeNum": 4,
-                "switchType": "default"
-            },
-            "x": "573.0",
+            "x": "243.0",
             "y": "493.0"
         }
     ],

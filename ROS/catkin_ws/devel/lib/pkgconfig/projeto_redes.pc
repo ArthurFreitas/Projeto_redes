@@ -1,8 +1,8 @@
-prefix=/home/ubuntu/catkin_ws/devel
+prefix=/home/ubuntu/Projeto_redes/ROS/catkin_ws/devel
 
 Name: projeto_redes
 Description: Description of projeto_redes
 Version: 0.0.0
 Cflags: 
-Libs: -L/home/ubuntu/catkin_ws/devel/lib 
+Libs: -L/home/ubuntu/Projeto_redes/ROS/catkin_ws/devel/lib 
 Requires: 

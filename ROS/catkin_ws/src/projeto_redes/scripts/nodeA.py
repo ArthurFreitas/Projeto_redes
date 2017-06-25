@@ -7,7 +7,7 @@ hash = None
 pub = rospy.Publisher('AToB', String, queue_size=10) #publisher
 
 def callback(data):
-    rospy.loginfo("A heard %s",data.data)
+    #rospy.loginfo("A heard %s",data.data)
     if hash == data.data[0:32]:
         sendMsg()
 
@@ -19,7 +19,7 @@ def talker():
 
 def sendMsg():
     rospy.set_param('global_timer',rospy.get_time())#restart global timer
-    rospy.Timer(rospy.Duration(10),timeout,oneshot=True)#set timeout function
+    rospy.Timer(rospy.Duration(1),timeout,oneshot=True)#set timeout function
     global hash 
     hash = "%032x" % random.getrandbits(128)
     msg = "%s:%s" % (hash,(rospy.get_time() - rospy.get_param('global_timer')))
